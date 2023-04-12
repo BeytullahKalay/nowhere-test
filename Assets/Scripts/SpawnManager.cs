@@ -1,52 +1,69 @@
 ﻿using System.Collections.Generic;
+using Assets.Scripts.MyScripts;
 using UnityEngine;
 
 namespace Assets.Scripts
 {
     public class SpawnManager : MonoBehaviour
     {
-        [SerializeField] private GameObject _ballPrefab;
+        [SerializeField] private Transform coloredBallsParent;
 
-        private List<Ball> _balls;
+        private List<Ball> _balls = new List<Ball>();
+
+        private Pooler _pooler;
+
+        private void Awake()
+        {
+            _pooler = Pooler.Instance;
+        }
+        
 
         private void Update()
         {
             if (Input.GetMouseButtonDown(0))
             {
-                SpawnBallAtMouseAndGiveName(Input.mousePosition, "Colored Ball");
+                SpawnBallAtMouseAndGiveName(Helpers.GetWorldPositionOfPointer(Helpers.MainCamera), "Colored Ball");
             }
             else if (Input.GetMouseButtonDown(1))
             {
-                //TODO: This should remove all red balls, right?
-                foreach (var ball in _balls)
+                RemoveAllRedBalls();
+            }
+        }
+
+        private void RemoveAllRedBalls()
+        {
+            var arrayList = _balls.ToArray();
+            for (var i = 0; i < arrayList.Length; i++)
+            {
+                if (arrayList[i].Color == Color.red)
                 {
-                    if (ball.Color == Color.red)
-                    {
-                        RemoveBall(ball);
-                        break;
-                    }
+                    _pooler.BallPool.Release(arrayList[i].gameObject);
+                    _balls.Remove(arrayList[i]);
                 }
             }
         }
 
-        public void RemoveBall(Ball ball)
+        private void SpawnBallAtMouseAndGiveName(Vector3 mousePosition, string newName)
         {
-            //TODO: Implement a way to remove a ball from the scene and the list.
+            InstantiateBall(mousePosition,newName);
+            EventManager.PlaynSpawnSound?.Invoke();
         }
 
-        private void SpawnBallAtMouseAndGiveName(Vector3 mousePosition, string name)
+        private void InstantiateBall(Vector3 position,string newName)
         {
-            //TODO: Spawn a random color of ball at the position of the mouse click and play spawn sound.
-            //OPTIONAL: Use events for playing sounds.
-        }
-
-        private Ball InstantiateBall(Vector3 position)
-        {
-            GameObject ballGameObject = Instantiate(_ballPrefab, position, Quaternion.identity);
-            Ball ball = ballGameObject.GetComponent<Ball>(); //TODO: What's a better way to do this?
-            ball.SetName(name);
-            _balls.Add(ball);
-            return ball;
+            var ballGameObject = _pooler.BallPool.Get();
+            ballGameObject.transform.position = position;
+            ballGameObject.transform.SetParent(coloredBallsParent);
+            
+            if (ballGameObject.TryGetComponent<Ball>(out var ball))
+            {
+                ball.SetName(newName);
+                _balls.Add(ball);
+            }
+            else
+            {
+                Debug.LogError("Object doesn't contain Ball component!");
+            }
         }
     }
 }

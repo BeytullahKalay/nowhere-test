@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using Assets.Scripts.Managers;
+using Assets.Scripts.MyScripts;
+using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Assets.Scripts
 {
@@ -6,19 +9,41 @@ namespace Assets.Scripts
     public class Ball : MonoBehaviour
     {
         public Color Color { get => _spriteRenderer.color; }
+        
         protected SpriteRenderer _spriteRenderer;
-
-        //TODO: Implement 2 types of balls which has red and blue colors.
-        //OPTIONAL: Think outside the box.
+        
+        private GameManager _gm;
 
         protected virtual void Awake()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
+            _gm = GameManager.Instance;
         }
 
-        public void SetName(string name)
+        private void OnEnable()
         {
-            this.name = name;
+            SetColor();
+        }
+
+        private void SetColor()
+        {
+            switch (_gm.SpawnTypes)
+            {
+                case SpawnTypes.RedAndBlue:
+                    _spriteRenderer.color = Random.value > .5f ? Color.red : Color.blue;
+                    break;
+                case SpawnTypes.AllRandom:
+                    _spriteRenderer.color = Random.ColorHSV();
+                    break;
+                default:
+                    Debug.LogError("Not type selected!");
+                    break;
+            }
+        }
+
+        public void SetName(string newName)
+        {
+            name = newName;
         }
     }
 }
